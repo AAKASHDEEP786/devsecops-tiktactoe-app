@@ -179,17 +179,20 @@ jobs:
           IMAGE_TAG: sha-${{ github.sha }}
           REGISTRY: ghcr.io
         run: |
-          # Use the lowercase repository name from environment
-          NEW_IMAGE="${REGISTRY}/${REPO_NAME}:${IMAGE_TAG}"
-          
-          # Update the deployment file directly
-          sed -i "s|image: ${REGISTRY}/.*|image: ${NEW_IMAGE}|g" kubernetes/deployment.yaml
-          
-          # Verify the change
-          echo "Updated deployment to use image: ${NEW_IMAGE}"
+          # Always lowercase the final image name
+          NEW_IMAGE=$(echo "${REGISTRY}/${REPO_NAME}:${IMAGE_TAG}" | tr '[:upper:]' '[:lower:]')
+
+          echo "🔹 Updating image in deployment file to: ${NEW_IMAGE}"
+
+          # Robust regex that matches indentation and old image
+          sed -i -E "s|image:\s*ghcr\.io/[a-zA-Z0-9._/-]+:.*|image: ${NEW_IMAGE}|g" kubernetes/deployment.yaml
+
+          echo "✅ Updated deployment file preview:"
           grep -A 1 "image:" kubernetes/deployment.yaml
       
       - name: Commit and push changes
         run: |
           git add kubernetes/deployment.yaml
-          git commit -m "Update Kubernetes deployment with new image tag: ${{ needs.docker.outputs.image_tag }} [skip ci]" || echo_
+          git commit -m "Update Kubernetes deployment with new image tag: ${{ needs.docker.outputs.image_tag }} [skip ci]" || echo "No changes to commit"
+          git push
+

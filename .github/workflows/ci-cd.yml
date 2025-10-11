@@ -167,6 +167,13 @@ jobs:
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
+
+      - name: Set lowercase repository name
+        id: repo_name
+        run: |
+          REPO_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "REPO_NAME=$REPO_NAME" >> $GITHUB_ENV
+          echo "Using lowercase repo name: $REPO_NAME"
       
       - name: Update Kubernetes deployment file
         env:
